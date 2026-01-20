@@ -1,68 +1,21 @@
-{{- if .Values.ingress.enabled -}}
-{{- $fullName := include "backend-expose.fullname" . -}}
-{{- $svcPort := .Values.service.port -}}
-{{- if and .Values.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
-  {{- if not (hasKey .Values.ingress.annotations "kubernetes.io/ingress.class") }}
-  {{- $_ := set .Values.ingress.annotations "kubernetes.io/ingress.class" .Values.ingress.className}}
-  {{- end }}
-{{- end }}
-{{- if semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion -}}
-apiVersion: networking.k8s.io/v1
-{{- else if semverCompare ">=1.14-0" .Capabilities.KubeVersion.GitVersion -}}
-apiVersion: networking.k8s.io/v1beta1
-{{- else -}}
-apiVersion: extensions/v1beta1
-{{- end }}
-kind: Ingress
+apiVersion: networking.k8s.io/v1 # API version for the Ingress resource.
+kind: Ingress                    # Defines a Kubernetes Ingress resource.
 metadata:
-  name: {{ $fullName }}
-  labels:
-    {{- include "backend-expose.labels" . | nindent 4 }}
-  {{- with .Values.ingress.annotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
+  name: api
+  namespace: 0oqfemca-expose-dev
 spec:
-  {{- if and .Values.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
-  ingressClassName: {{ .Values.ingress.className }}
-  {{- end }}
-  {{- if .Values.ingress.tls }}
-  tls:
-    {{- range .Values.ingress.tls }}
-    - hosts:
-        {{- range .hosts }}
-        - {{ . | quote }}
-        {{- end }}
-      secretName: {{ .secretName }}
-    {{- end }}
-  {{- end }}
+  # Rules to determine how HTTP/S traffic is routed to services.
   rules:
-    {{- range .Values.ingress.hosts }}
-    # if .host = edpDefault then we need to use
-    # {{ $fullName }}-{{ $.Release.Namespace }}.{{ $.Values.ingress.dnsWildcard }}
-    # otherwise we need to use {{ .host }}
-    {{- if eq .host "edpDefault" }}
-    - host: {{ $fullName }}-{{ $.Release.Namespace }}.{{ $.Values.ingress.dnsWildcard }}
-    {{- else }}
-    - host: {{ .host | quote }}
-    {{- end }}
+    # The host/domain name for accessing the application.
+    - host: backend-expose-0oqfemca-expose-dev.development.krci-dev.cloudmentor.academy
+    # Defines HTTP routing rules.
       http:
         paths:
-          {{- range .paths }}
-          - path: {{ .path }}
-            {{- if and .pathType (semverCompare ">=1.18-0" $.Capabilities.KubeVersion.GitVersion) }}
-            pathType: {{ .pathType }}
-            {{- end }}
+          - path: /
+            # Specifies the type of path matching. "Prefix" means all paths starting with `/`.
+            pathType: Prefix
             backend:
-              {{- if semverCompare ">=1.19-0" $.Capabilities.KubeVersion.GitVersion }}
               service:
-                name: {{ $fullName }}
+                name: api        # The name of the service to route traffic to.
                 port:
-                  number: {{ $svcPort }}
-              {{- else }}
-              serviceName: {{ $fullName }}
-              servicePort: {{ $svcPort }}
-              {{- end }}
-          {{- end }}
-    {{- end }}
-{{- end }}
+                  number: 80     # The service's port to forward traffic to.
