@@ -1,15 +1,20 @@
-apiVersion: v1
-kind: Service
+apiVersion: v1                                 # API version for the Kubernetes object.
+kind: Service                                  # The type of Kubernetes resource.
+# Metadata provides identifying information about the object, such as its name, namespace, labels, and annotations.
+# It helps distinguish and organize resources within the cluster.
 metadata:
-  name: {{ include "backend-expose.fullname" . }}
-  labels:
-    {{- include "backend-expose.labels" . | nindent 4 }}
+  name: api
+  namespace: 0oqfemca-expose-dev
 spec:
-  type: {{ .Values.service.type }}
   ports:
-    - port: {{ .Values.service.port }}
-      targetPort: http
-      protocol: TCP
-      name: http
+    - protocol: TCP                            # The protocol used for the service.
+      port: 80                                 # The port on which the Service is exposed.
+      targetPort: http                         # The port where the application is running inside the container.
+  # Labels that are used to associate the Service with the corresponding Pods.
+  # The Service will route traffic to Pods with matching labels.
   selector:
-    {{- include "backend-expose.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/instance: backend-expose # Label to match a specific instance of the app.
+    app.kubernetes.io/name: backend-expose     # Label to match the application name.
+  # The Service type. "ClusterIP" exposes the service internally within the cluster.
+  # This means the Service is not directly accessible from outside the cluster.
+  type: ClusterIP
